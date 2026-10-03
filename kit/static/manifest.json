@@ -1,0 +1,40 @@
+{
+  "name": "Memo",
+  "short_name": "Memo",
+  "version": "1.0",
+  "start_url": ".",
+  "id": "memo",
+  "scope": "/",
+  "display": "fullscreen",
+  "background_color": "#333",
+  "orientation": "portrait",
+  "description": "欲买桂花同载酒，终不似，少年游",
+  "theme_color": "#1b2824",
+  "icons": [
+	  {
+	    "src": "/logo.1024.png",
+	    "sizes": "1024x1024",
+	    "type": "image/png"
+	  },
+    {
+      "src": "/logo.maskable.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/logo.1024.png",
+      "sizes": "1024x1024",
+      "form_factor": "narrow",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo.1024.png",
+      "sizes": "1024x1024",
+      "form_factor": "wide",
+      "type": "image/png"
+    }
+  ]
+}

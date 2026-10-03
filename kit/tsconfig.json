@@ -1,0 +1,17 @@
+{
+	"extends": "$app/tsconfig",
+	"compilerOptions": {
+		"noImplicitAny": true,
+		"strict": true,
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"verbatimModuleSyntax": true,
+		"skipLibCheck": true,
+		"target": "esnext",
+		"noEmit": true,
+		"isolatedModules": true,
+		"jsx": "react-jsx",
+		"jsxImportSource": "react"
+	},
+	"exclude": ["src/service-worker", ".edgenone", "node_modules", "static"]
+}

@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-primary: var(--color-primary);
+  --color-gold: var(--color-gold);
+  --color-bg: var(--color-bg);
+  --color-ink-faint: var(--color-ink-faint);
+  --color-ink-fg: var(--color-ink-fg);
+  --color-ink-bg: var(--color-ink-bg);
+  --color-muted: var(--color-muted);
+  --color-accent: var(--color-accent);
+  --color-red: var(--color-red);
+}
+
+:root {
+  --color-primary: #1b2824;
+  --color-muted: #6b6357;
+  --color-gold: #e9c182bf;
+  --color-bg: #f4f1e8;
+  --color-ink-faint: #a09786;
+  --color-ink-fg: #6b6357;
+  --color-ink-bg: #fffdf6;
+  --color-accent: #b8451f;
+  --color-red: #df7247;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+
+@layer base {
+  * {
+    @apply font-raleway;
+
+    text-wrap: pretty;
+
+    &:focus-visible {
+      @apply outline-none;
+    }
+  }
+
+  a {
+    cursor: pointer;
+  }
+
+  body {
+    @apply w-full min-h-dvh bg-bg flex flex-col relative;
+    -webkit-font-smoothing: antialiased;
+
+    &::before {
+      @apply w-full h-full block absolute -z-1 top-0 left-0;
+      content: "";
+      background-image: radial-gradient(#dfd9c7 0.8px, transparent 0.8px);
+      background-size: 22px 22px;
+      /* background: url("/img/bg.jpg") center/cover no-repeat; */
+    }
+  }
+
+  kbd {
+    @apply border border-ink-faint/50 rounded-sm px-1.5 py-0.5 mx-0.5 bg-ink-bg;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  ::backdrop {
+    @apply bg-black/30 opacity-100;
+    transition: opacity .3s ease;
+
+    @starting-style {
+      opacity: 0;
+    }
+  }
+
+  /** 去掉默认动画 */
+  ::view-transition-old(root), ::view-transition-new(root) {
+    animation: none;
+  }
+
+}
+
+@utility fvn {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+@utility max-w-main {
+  @apply max-w-300;
+}
+
+@utility vtc-* {
+  view-transition-class: --value([*]);
+}
+
+@utility vtn-* {
+  view-transition-name: --value([*]);
+}
+
+@utility font-raleway {
+  font-family: raleway;
+}
+
+@utility font-en {
+  letter-spacing: 0;
+  font-family: consolas, melon, monospace;
+}
+
+@utility font-num {
+  font-family: georgia, serif;
+}
+
+@utility wvr {
+  writing-mode: vertical-rl;
+}
+
+@utility no-scrollbar {
+  &::-webkit-scrollbar {
+    @apply hidden;
+  }
+  scrollbar-wdith: none;
+  -ms-overflow-style: none;
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "/Users/jet/.bun/install/global/node_modules/wrangler/config-schema.json",
+  "name": "sudoku-new",
+  "main": ".svelte-kit/cloudflare/_worker.js",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {"directory": ".svelte-kit/cloudflare", "binding": "ASSETS"},
+  "compatibility_date": "2026-10-01",
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "routes": [
+    {"pattern": "sudoku.lufei.me", "custom_domain": true}
+  ],
+  "vars": {
+    "NEXUS": "https://nexus.hape.app",
+    "NEXUS_G": "https://n.hape.app"
+  }
+}

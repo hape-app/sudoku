@@ -6,7 +6,7 @@
     "dev": "vite dev --host --port 6767",
     "build": "vite build",
     "preview": "vite preview",
-    "deploy": "edgeone makers deploy -n poetry",
+    "deploy": "vite build && wrangler deploy",
     "check": "svelte-check"
   },
   "imports": {
@@ -18,8 +18,9 @@
   },
   "dependencies": {
     "@iro/edgeone": "^1.0.0",
-    "@lucide/svelte": "^1.49.0",
-    "@sveltejs/kit": "^3.0.0",
+    "@lucide/svelte": "^1.52.0",
+    "@sveltejs/adapter-cloudflare": "^8.0.0",
+    "@sveltejs/kit": "^3.0.1",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^26.6.4",
@@ -30,11 +31,11 @@
     "markdown-it-ins": "^4.0.0",
     "sass": "^1.105.1",
     "sui": "file:/users/jet/workspace/npm/sui",
-    "svelte": "^5.57.1",
+    "svelte": "^5.57.2",
     "svelte-sonner": "^1.2.1",
     "tailwindcss": "^4.3.3",
     "typescript": "6",
-    "vite": "latest",
+    "vite": "^8.3.3",
     "zod": "^4.6.5"
   }
 }

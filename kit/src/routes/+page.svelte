@@ -1,14 +1,15 @@
 <script lang="ts">
   import {onMount} from 'svelte'
   import {SvelteSet} from 'svelte/reactivity'
-  import {Eraser, NotebookPen, Lightbulb} from '@lucide/svelte'
+  import {Eraser, NotebookPen, Lightbulb, RotateCcw, ClockPlus} from '@lucide/svelte'
   import {sleep} from '#lib'
+  import * as i18n from '#lib/i18n/index.svelte.ts'
 
   import {decode, duplicate} from './sudoku'
 
 
   const {puzzle} = decode('b2b5b1a4a6_2a3_9c8a1c2d3_1_4_7_8i8_5_7_9_4d4c9a5c1_3a5_7a8a2b8b1b')
-  const answers = $state<Array<number | undefined>>(puzzle)
+  let answers = $state<Array<number | undefined>>(puzzle)
   const levels = ['初级', '中级', '高级', '困难']
 
   const snap = $state({
@@ -18,7 +19,7 @@
   })
 
   let current = $state.raw({x: -1, y: -1})
-  const notes = $state<{active: boolean, nums: Set<number>}[]>([])
+  let notes = $state<{active: boolean, nums: Set<number>}[]>([])
   const ci = $derived(current.y * 9 + current.x)
 
   const errIndices = $derived(duplicate(answers))
@@ -128,6 +129,11 @@
     countdown()
   }
 
+  function replay() {
+    answers = puzzle
+    notes = []
+  }
+
   onMount(() => {
     countdown()
   })
@@ -146,7 +152,7 @@
             >{x}</button>
           {/each}
         </div>
-        <span class="font-semibold fvn text-ink-fg">{tt}</span>
+        <span class="text-sm fvn text-ink-fg font-mono">{tt}</span>
       </div>
 
       <div style:--bc="#c1a57d70" style:--tc="#aaa0"
@@ -224,12 +230,13 @@
         {/each}
       </div>
       <div class="tool">
-        <button aria-label="eraser" onclick={clear}><Eraser size={20}/></button>
-        <button
-          aria-label={snap.mode}
+        <button title={i18n.t('home.eraser')} onclick={clear}><Eraser size={20}/></button>
+        <button title={i18n.t('home.note')}
           class:active={snap.mode === 'note'}
           onclick={() => snap.mode = snap.mode === 'note' ? 'pen' : 'note'}
         ><NotebookPen size={20}/></button>
+        <button title="新游戏" onclick={replay}><ClockPlus size={20}/></button>
+        <button title="重来" onclick={replay}><RotateCcw size={20}/></button>
       </div>
       <div class="tip text-xs font-semibold">
         <p class="flex items-center gap-2 border-b border-ink-faint/30 pb-3 border-dashed"><Lightbulb size={20} class="text-yellow-500"/><span class="text-sm">操作提示</span></p>

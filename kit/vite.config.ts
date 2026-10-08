@@ -2,7 +2,7 @@ import {defineConfig} from 'vite'
 import path from 'node:path'
 import {sveltekit} from '@sveltejs/kit/vite'
 import tw from '@tailwindcss/vite'
-import adapter from '@iro/edgeone'
+import adapter from '@sveltejs/adapter-cloudflare'
 import {vitePreprocess as preprocess} from '@sveltejs/vite-plugin-svelte'
 
 export default defineConfig({

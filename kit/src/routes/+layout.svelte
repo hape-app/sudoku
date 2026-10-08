@@ -6,6 +6,8 @@
 
   const {children} = $props()
 
+  const BASE_URL = import.meta.env.VITE_BASE_URL
+
   let dialog: HTMLDialogElement
 
   function click(e: MouseEvent) {
@@ -46,7 +48,7 @@
 <dialog bind:this={dialog}
   class="m-auto p-4 rounded-md border border-ink-faint/30 shadow-md"
   onclick={click}>
-  <a href="{NEXUS_G}/auth/google" aria-label="google"><img src="/img/google.svg" alt="google"/></a>
+  <a href="{NEXUS_G}/auth/google?url={BASE_URL}/auth" aria-label="google"><img src="/img/google.svg" alt="google"/></a>
 </dialog>
 
 {@render children()}

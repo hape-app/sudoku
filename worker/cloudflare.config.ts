@@ -1,13 +1,14 @@
-import { bindings, defineConfig } from "cf/config";
-import * as entrypoint from "./src/index.ts" with { type: "cf-worker" };
+import {bindings, defineConfig} from 'cf/config'
+import * as entrypoint from './src' with {type: 'cf-worker'}
 
 export default defineConfig({
 	worker: {
 		name: "api-lufei-me",
 		compatibilityDate: "2026-10-01",
 		entrypoint,
+		compatibilityFlags: ['nodejs_compat'],
 		env: {
-			WORLD: bindings.text("World")
+			RSA_PUK: bindings.secret(),
 		},
 	},
 });

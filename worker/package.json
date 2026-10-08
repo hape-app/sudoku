@@ -8,6 +8,10 @@
 		"deploy": "cf deploy",
 		"typecheck": "cf workers types && tsc"
 	},
+	"imports": {
+		"#lib": "./lib/index.ts",
+		"#lib/*": "./lib/*"
+	},
 	"devDependencies": {
 		"@cloudflare/vite-plugin": "beta",
 		"cf": "^1.0.0-beta.12",
@@ -15,6 +19,10 @@
 		"vite": "^8.3.0"
 	},
 	"dependencies": {
-		"hono": "^4.13.13"
+		"@types/node": "^26.6.4",
+		"bson": "^7.3.3",
+		"hono": "^4.13.13",
+		"jose": "^6.2.12",
+		"mongodb": "6"
 	}
 }

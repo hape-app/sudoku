@@ -138,8 +138,6 @@
     }
   })
 
-
-
   async function countdown() {
     snap.t++
     await sleep(1)

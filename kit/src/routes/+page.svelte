@@ -8,7 +8,10 @@
   import {decode, duplicate} from './sudoku'
 
 
-  const {puzzle} = decode('b2b5b1a4a6_2a3_9c8a1c2d3_1_4_7_8i8_5_7_9_4d4c9a5c1_3a5_7a8a2b8b1b')
+  // svelte-ignore non_reactive_update
+  let dialog: HTMLDialogElement
+
+  const {puzzle} = decode('9b7b1a2d9d6_5_4e3e7_2b8b2a5b4b6_4e5e3_7_9d6d2a3b1b5')
   let answers = $state<Array<number | undefined>>(puzzle)
   const levels = ['初级', '中级', '高级', '困难']
 
@@ -33,6 +36,18 @@
       if (v === answers[i]) r.add(i)
     }
     return r
+  })
+
+  // 是否完成
+  const finished = $derived.by(() => {
+    let ok
+    for (const x of answers) {
+      if (!x) return false
+    }
+    if (!ok) return false
+    ok = errIndices.size === 0
+    if (!ok) return false
+    return true
   })
   // 自动判断无法输入的数字
   const allowNums = $derived.by(() => {
@@ -123,6 +138,8 @@
     }
   })
 
+
+
   async function countdown() {
     snap.t++
     await sleep(1)
@@ -133,6 +150,8 @@
     answers = puzzle
     notes = []
   }
+
+  $inspect(finished)
 
   onMount(() => {
     countdown()
@@ -152,7 +171,7 @@
             >{x}</button>
           {/each}
         </div>
-        <span class="text-sm fvn text-ink-fg font-mono">{tt}</span>
+        <span class="text-sm font-semibold fvn text-ink-fg font-mono">{tt}</span>
       </div>
 
       <div style:--bc="#c1a57d70" style:--tc="#aaa0"
@@ -247,6 +266,21 @@
     </div>
   </div>
 </main>
+
+{#if finished}
+<dialog bind:this={dialog} class="rounded-md m-auto shadow-md p-4 w-full max-w-100 border border-ink-faint/30">
+  <h1 class="font-semibold text-center">完成数独</h1>
+  <p class="text-center text-sm mt-4 flex items-center gap-2 justify-center">
+    <span>恭喜🎉</span>
+    <span>此次游戏耗时</span>
+    <span class="text-orange-500">{tt}</span>
+  </p>
+  <div class="mt-6 flex items-center gap-4 justify-center">
+    <button class="text-xs border border-ink-faint/30 rounded-md py-1 px-3 bg-lime-600 text-white">分享</button>
+    <button class="text-xs border border-ink-faint/30 rounded-md py-1 px-3 bg-sky-500 text-white">继续</button>
+  </div>
+</dialog>
+{/if}
 
 <svelte:window
   onkeydown={e => {

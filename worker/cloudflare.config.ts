@@ -11,7 +11,7 @@ export default defineConfig({
 		env: {
 			RSA_PUK: bindings.secret(),
 			COOKIE_SECRET: bindings.secret(),
-			APP_URL: bindings.text('https://sudoku.lufei.me'),
+			APP_URL: bindings.text('https://sudoku.hape.app'),
 		},
 	},
 })

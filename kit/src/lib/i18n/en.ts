@@ -2,6 +2,8 @@ export default {
   layout: {
     title: 'Sudoku',
     description: 'Never ceasing in the pursuit of all things beautiful.',
+    login: 'Log in',
+    logout: 'Log out',
   },
   home: {
     level0: 'Easy',
@@ -28,5 +30,8 @@ export default {
     share: 'Share',
     continue: 'Continue',
     shareCopied: 'Result copied to clipboard',
+    loading: 'Loading puzzle',
+    levelUnavailable: 'No {level} puzzles yet, switched to {actual}',
+    puzzleNo: 'Puzzle {number}',
   }
 }

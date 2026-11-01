@@ -1,24 +1,35 @@
 <script lang="ts">
   import {onMount} from 'svelte'
   import {SvelteSet} from 'svelte/reactivity'
-  import {Eraser, NotebookPen, Lightbulb, RotateCcw, ClockPlus} from '@lucide/svelte'
+  import {ClockPlus, Eraser, Lightbulb, LoaderCircle, NotebookPen, RotateCcw} from '@lucide/svelte'
+  import {getPuzzle} from '#api'
   import {toast} from '#lib'
   import * as i18n from '#lib/i18n/index.svelte.ts'
 
-  import {decode, duplicate, generate} from './sudoku'
-
+  import {decode, duplicate} from './sudoku'
 
   // svelte-ignore non_reactive_update
   let dialog: HTMLDialogElement
 
-  const DEFAULT_TASK = '9b7b1a2d9d6_5_4e3e7_2b8b2a5b4b6_4e5e3_7_9d6d2a3b1b5'
-  const initialPuzzle = decode(DEFAULT_TASK).puzzle
-  let puzzle = $state.raw<Array<number | undefined>>(initialPuzzle)
-  let answers = $state<Array<number | undefined>>([...initialPuzzle])
-  const levels = ['level0', 'level1', 'level2', 'level3'] as const
+  function emptyBoard() {
+    return Array<number | undefined>(81).fill(undefined)
+  }
+
+  let puzzle = $state.raw(emptyBoard())
+  let answers = $state(emptyBoard())
+  let puzzleNumber = $state<number | null>(null)
+  let loading = $state(true)
+  let requestVersion = 0
+
+  const levels = [
+    {label: 'level0', value: 'beginner'},
+    {label: 'level1', value: 'intermediate'},
+    {label: 'level2', value: 'advanced'},
+    {label: 'level3', value: 'expert'},
+  ] as const
 
   const snap = $state({
-    level: 3,
+    level: 0,
     t: 0,
     mode: 'pen' as 'pen' | 'note'
   })
@@ -79,6 +90,18 @@
     return r
   })
 
+  // 统计每个数字 1-9 剩余可填数量
+  const remainNums = $derived.by(() => {
+    const counts = Array(10).fill(9)
+    for (let i = 0; i < 81; i++) {
+      const v = answers[i]
+      if (v && v >= 1 && v <= 9 && !errIndices.has(i)) {
+        counts[v] = Math.max(0, counts[v] - 1)
+      }
+    }
+    return counts
+  })
+
   const tt = $derived.by(() => {
     let t = snap.t
     const m = t / 60 | 0
@@ -93,7 +116,7 @@
   })
 
   function input(v: number) {
-    if (ci < 0 || puzzle[ci] || v < 1 || v > 9) return
+    if (loading || ci < 0 || puzzle[ci] || v < 1 || v > 9) return
     if (snap.mode === 'pen') {
       answers[ci] = v
       if (notes[ci]) notes[ci].active = false
@@ -139,12 +162,13 @@
   }
 
   function clear() {
-    if (ci < 0 || puzzle[ci]) return
+    if (loading || ci < 0 || puzzle[ci]) return
     if (snap.mode === 'pen') answers[ci] = undefined
     else notes[ci]?.nums.clear()
   }
 
   function replay() {
+    if (loading) return
     answers = [...puzzle]
     notes = []
     current = {x: -1, y: -1}
@@ -152,18 +176,49 @@
     dialog?.close()
   }
 
-  function newGame(level = snap.level) {
+  async function newGame(level = snap.level) {
+    const selected = levels[level]
+    const version = ++requestVersion
+
     snap.level = level
-    puzzle = generate(level)
-    answers = [...puzzle]
+    loading = true
+    puzzle = emptyBoard()
+    answers = emptyBoard()
+    puzzleNumber = null
     notes = []
     current = {x: -1, y: -1}
     snap.t = 0
     dialog?.close()
+
+    try {
+      const data = await getPuzzle(selected.value)
+      if (version !== requestVersion) return
+
+      const next = decode(data.task).puzzle
+      if (next.length !== 81) throw new Error('Invalid puzzle data')
+
+      puzzle = next
+      answers = [...next]
+      puzzleNumber = data.number
+
+      const actual = levels.findIndex(item => item.value === data.level)
+      if (actual >= 0) snap.level = actual
+      if (actual >= 0 && actual !== level) {
+        toast(i18n.t('home.levelUnavailable', {
+          level: i18n.t(`home.${selected.label}`),
+          actual: i18n.t(`home.${levels[actual].label}`),
+        }))
+      }
+    } catch (e) {
+      if (version !== requestVersion) return
+      toast(e instanceof Error ? e : new Error(String(e)))
+    } finally {
+      if (version === requestVersion) loading = false
+    }
   }
 
   async function share() {
-    const levelName = i18n.t(`home.${levels[snap.level]}`)
+    const levelName = i18n.t(`home.${levels[snap.level].label}`)
     const text = `${i18n.t('layout.title')} (${levelName}) - ${tt} ${location.href}`
     if (navigator.clipboard) {
       await navigator.clipboard.writeText(text)
@@ -178,31 +233,40 @@
   })
 
   onMount(() => {
+    void newGame(0)
+
     const tid = setInterval(() => {
-      if (!finished) snap.t++
+      if (!finished && !loading) snap.t++
     }, 1e3)
     return () => clearInterval(tid)
   })
 </script>
 
 <main class="p-4">
-  <div class="mx-auto max-lg:max-w-120 lg:flex lg:justify-center lg:gap-10">
+  <div class="mx-auto max-lg:max-w-120 lg:flex lg:items-start lg:justify-center lg:gap-8">
     <!-- 数独九宫格 -->
-    <div class="flex gap-4 relative flex-col lg:w-120">
+    <div class="flex gap-3.5 relative flex-col lg:w-120">
       <div class="flex items-center justify-between">
         <div class="level" style:--ox={snap.level}>
-          {#each levels as x, i (x)}
+          {#each levels as item, i (item.value)}
             <button
               onclick={() => newGame(i)}
               class:active={snap.level === i}
-            >{i18n.t(`home.${x}`)}</button>
+              aria-pressed={snap.level === i}
+            >{i18n.t(`home.${item.label}`)}</button>
           {/each}
         </div>
-        <span class="text-sm font-semibold fvn text-ink-fg font-mono">{tt}</span>
+        <div class="flex flex-col items-center gap-1 bg-ink-bg px-2.5 py-1 rounded-md border border-ink-faint/30">
+          <span class="text-sm leading-none font-semibold fvn text-ink-fg font-mono">{tt}</span>
+          <span class="text-[10px] leading-none fvn text-muted">
+            {puzzleNumber ? i18n.t('home.puzzleNo', {number: puzzleNumber}) : '—'}
+          </span>
+        </div>
       </div>
 
       <div style:--bc="#c1a57d70" style:--tc="#aaa0"
-        class="grid grid-cols-3 w-full aspect-square gap-[3px] md:gap-[3px] bg-(--bc) border-3 md:border-4 border-(--bc) overflow-hidden rounded-md">
+        class="grid grid-cols-3 w-full aspect-square gap-[3px] md:gap-[3px] bg-(--bc) border-3 md:border-4 border-(--bc) overflow-hidden rounded-md shadow-xs relative"
+        aria-busy={loading}>
         {#each {length: 9} as _, m (m)}
           {const x1 = m % 3}
           {const y1 = (m / 3) | 0}
@@ -230,12 +294,12 @@
                 data-x={x}
                 data-y={y}>
                 {#if note && note.active && note.nums.size}
-                  <div class="absolute top-0 left-0 w-full h-full grid grid-cols-3">
+                  <div class="absolute inset-0.5 grid grid-cols-3">
                     {#each {length: 9} as _, i (i)}
                       {const v = i + 1}
                       <div class="flex items-center justify-center relative">
                         <span
-                          class="absolute top-0 left-0 w-full h-full flex items-center justify-center text-xs"
+                          class="absolute inset-0 flex items-center justify-center text-[11px] leading-none text-ink-fg/80 font-medium"
                         >{note.nums.has(v) ? v : ''}</span>
                       </div>
                     {/each}
@@ -245,10 +309,16 @@
             {/each}
           </div>
         {/each}
+        {#if loading}
+          <div class="absolute inset-0 z-20 flex items-center justify-center bg-white/65 backdrop-blur-[1px]" role="status" aria-live="polite">
+            <LoaderCircle class="animate-spin text-orange-500" size={28}/>
+            <span class="sr-only">{i18n.t('home.loading')}</span>
+          </div>
+        {/if}
       </div>
 
-      <div class="text-xs flex items-center justify-between bg-gray-50/50 p-3 rounded-md border border-ink-faint/30">
-        <button onclick={() => hl.num = !hl.num} style:--bg="#e2dfff">
+      <div class="text-xs flex items-center justify-between bg-ink-bg/80 px-3.5 py-2.5 rounded-md border border-ink-faint/30 text-ink-fg">
+        <button onclick={() => hl.num = !hl.num} style:--bg="#dbeafe">
           <span class="square" class:bg-(--bg)={hl.num}></span>
           <span>{i18n.t('home.matchNum')}</span>
         </button>
@@ -264,27 +334,43 @@
     </div>
 
     <!-- 右侧 -->
-    <div class="flex flex-col">
-      <div class="num-panel">
-        {#each {length: 9} as _, i (i)}
-          {const v = i + 1}
-          <button
-            data-num={v}
-            disabled={!allowNums.has(v)}
-            onclick={click}
-            class="num cursor-pointer flex-1 rounded-sm aspect-square bg-ink-bg/80 font-semibold border border-ink-faint/50">{v}</button>
-        {/each}
-      </div>
+    <div class="side-panel flex flex-col lg:w-60">
       <div class="tool">
-        <button title={i18n.t('home.eraser')} onclick={clear}><Eraser size={20}/></button>
+        <button title={i18n.t('home.eraser')} onclick={clear}>
+          <Eraser size={18}/>
+          <span>{i18n.t('home.eraser')}</span>
+        </button>
         <button title={i18n.t('home.note')}
           class:active={snap.mode === 'note'}
           onclick={() => snap.mode = snap.mode === 'note' ? 'pen' : 'note'}
-        ><NotebookPen size={20}/></button>
-        <button title={i18n.t('home.newGame')} onclick={() => newGame()}><ClockPlus size={20}/></button>
-        <button title={i18n.t('home.replay')} onclick={replay}><RotateCcw size={20}/></button>
+        >
+          <NotebookPen size={18}/>
+          <span>{i18n.t('home.note')}</span>
+        </button>
+        <button title={i18n.t('home.newGame')} onclick={() => newGame()}>
+          <ClockPlus size={18}/>
+          <span>{i18n.t('home.newGame')}</span>
+        </button>
+        <button title={i18n.t('home.replay')} onclick={replay}>
+          <RotateCcw size={18}/>
+          <span>{i18n.t('home.replay')}</span>
+        </button>
       </div>
-      <div class="tip text-xs font-semibold">
+      <div class="num-panel">
+        {#each {length: 9} as _, i (i)}
+          {const v = i + 1}
+          {const rem = $derived(remainNums[v])}
+          <button
+            data-num={v}
+            disabled={loading || !allowNums.has(v)}
+            onclick={click}
+            class="num cursor-pointer min-h-11 rounded-md bg-ink-bg font-semibold border border-ink-faint/40 flex flex-col items-center justify-center py-2 lg:py-3 shadow-2xs transition-colors">
+            <span class="text-base lg:text-xl leading-none">{v}</span>
+            <span class="text-[10px] leading-none mt-1 opacity-55 fvn font-normal">{rem}</span>
+          </button>
+        {/each}
+      </div>
+      <div class="tip text-xs font-semibold max-lg:hidden">
         <p class="flex items-center gap-2 border-b border-ink-faint/30 pb-3 border-dashed"><Lightbulb size={20} class="text-yellow-500"/><span class="text-sm">{i18n.t('home.tips')}</span></p>
         <p class="mt-4"><span class="mr-2">{i18n.t('home.clearNum')}</span><kbd>{i18n.t('home.dblclick')}</kbd><span class="mx-1">or</span><kbd>{i18n.t('home.delBackspace')}</kbd></p>
         <p class="mt-4"><span class="mr-2">{i18n.t('home.toggleNote')}</span><kbd>N</kbd></p>
@@ -311,7 +397,7 @@
 
 <svelte:window
   onkeydown={e => {
-    if (finished) return
+    if (finished || loading) return
     switch (e.key) {
       case 'n':
       case 'N': {
@@ -361,39 +447,35 @@
     @apply text-xs text-ink-fg;
   }
 
-  div:has(>.num-panel) {
-    @apply gap-4 mt-4;
+  .side-panel {
+    @apply gap-3.5 mt-3.5;
 
     @variant lg {
-      @apply rounded-md p-4 h-fit self-center justify-center mt-0;
+      @apply h-fit justify-center mt-13;
     }
   }
 
   .tip {
-    @apply border border-ink-faint/30 bg-ink-bg p-4 rounded-md order-2;
+    @apply border border-ink-faint/30 bg-ink-bg p-4 rounded-md text-ink-fg;
   }
 
   .tool {
-    @apply flex items-center justify-center gap-4;
+    @apply grid grid-cols-4 gap-2;
 
     button {
-      @apply block aspect-square border border-ink-faint/50 bg-ink-bg p-1.5 rounded-md text-ink-fg;
+      @apply flex flex-col items-center justify-center gap-1 border border-ink-faint/40 bg-ink-bg py-2 px-1 rounded-md text-ink-fg text-[11px] font-medium hover:border-ink-faint transition-colors;
 
       &.active {
         @apply bg-sky-500 text-white border-transparent;
       }
     }
-
-    @variant lg {
-      @apply order-0;
-    }
   }
 
   .level {
-    @apply relative flex items-center justify-between w-fit p-1 bg-white border border-ink-faint/30 rounded-md;
+    @apply relative grid grid-cols-4 w-fit p-1 bg-ink-bg border border-ink-faint/30 rounded-md;
 
     &::before {
-      --w: calc(25% - var(--spacing)*.5);
+      --w: calc((100% - var(--spacing)*2) / 4);
       --h: calc(100% - var(--spacing)*2);
       @apply content-[""] w-(--w) h-(--h) absolute top-1 left-1 bg-orange-500/80 rounded-sm -z-0;
       transform: translateX(calc(100% * var(--ox)));
@@ -401,7 +483,7 @@
     }
 
     button {
-      @apply py-1.5 px-3 text-xs;
+      @apply py-1.5 px-3 text-xs text-center text-ink-fg font-medium;
 
       transform: translateZ(0);
       transition: all .5s ease;
@@ -413,17 +495,9 @@
   }
 
   .num-panel {
-    @apply flex items-center justify-between gap-2;
+    @apply grid grid-cols-3 gap-2;
     .num {
-      @apply hover:bg-lime-500/80 hover:text-white disabled:bg-zinc-200 disabled:line-through disabled:text-gray-500 disabled:cursor-not-allowed;
-    }
-
-    @variant lg {
-      @apply grid grid-cols-3 order-1 items-center justify-items-center;
-
-      .num {
-        @apply w-10 aspect-square;
-      }
+      @apply text-ink-fg hover:bg-lime-600/85 hover:text-white hover:border-transparent disabled:bg-zinc-200/70 disabled:line-through disabled:text-gray-400 disabled:cursor-not-allowed;
     }
   }
 
@@ -436,7 +510,11 @@
     }
 
     &[data-num=true] {
-      @apply bg-sky-100;
+      @apply bg-[#dbeafe];
+    }
+
+    &[data-active=true][data-raw=true] {
+      @apply bg-amber-100/80;
     }
 
     &[data-active=true]:not([data-raw=true]) {
@@ -444,11 +522,11 @@
     }
 
     &[data-err=true][data-raw=true] {
-      @apply border border-pink-500;
+      @apply bg-rose-100/70 border border-pink-500;
     }
 
     &[data-err=true]:not([data-raw=true]) {
-      @apply bg-pink-500/50;
+      @apply bg-[#ffdad6] text-rose-700;
     }
 
     &:not([data-raw=true]) {

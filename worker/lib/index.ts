@@ -1,6 +1,7 @@
 import {importSPKI, jwtVerify} from 'jose'
 
 export * as db from './db'
+export * from './schema'
 
 export async function jwtParse<T>(raw: string, pem: string): Promise<T> {
   const puk = await importSPKI(pem, 'RS256')

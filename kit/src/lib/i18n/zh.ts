@@ -2,6 +2,8 @@ export default {
   layout: {
     title: '数独',
     description: '从未停止对美好事物的探索',
+    login: '登录',
+    logout: '退出登录',
   },
   home: {
     level0: '初级',
@@ -28,5 +30,8 @@ export default {
     share: '分享',
     continue: '继续',
     shareCopied: '已复制成绩到剪贴板',
+    loading: '正在加载题目',
+    levelUnavailable: '{level}暂无题目，已切换到{actual}',
+    puzzleNo: '第 {number} 题',
   }
 }

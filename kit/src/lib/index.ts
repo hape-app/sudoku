@@ -1,6 +1,7 @@
 import {toast as _toast} from 'svelte-sonner'
 
 export * from './core.ts'
+export type {Profile, Puzzle, PuzzleLevel} from './schema.ts'
 export {default as dayjs} from './day.ts'
 
 export function toast(r: Error | string, type?: 'success') {

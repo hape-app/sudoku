@@ -9,6 +9,8 @@ export default defineConfig({
 		compatibilityFlags: ['nodejs_compat'],
 		env: {
 			RSA_PUK: bindings.secret(),
+			COOKIE_SECRET: bindings.secret(),
+			APP_URL: bindings.text('https://sudoku.lufei.me'),
 		},
 	},
 })

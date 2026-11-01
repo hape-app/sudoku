@@ -1,10 +1,32 @@
 export default {
   layout: {
-    title: '数独',
-    description: '从未停止对美好事物的探索',
+    title: 'Sudoku',
+    description: 'Never ceasing in the pursuit of all things beautiful.',
   },
   home: {
-    eraser: '擦除',
-    note: '笔记'
+    level0: 'Easy',
+    level1: 'Medium',
+    level2: 'Hard',
+    level3: 'Expert',
+    matchNum: 'Match Number',
+    highlightRC: 'Row & Col',
+    conflict: 'Conflicts',
+    eraser: 'Erase',
+    note: 'Notes',
+    newGame: 'New Game',
+    replay: 'Replay',
+    tips: 'Shortcuts',
+    clearNum: 'Clear Cell',
+    dblclick: 'Double Click',
+    delBackspace: 'Del/Backspace',
+    toggleNote: 'Toggle Notes',
+    fillNum: 'Enter Number',
+    numKeys: '1-9 Keys',
+    completed: 'Sudoku Completed',
+    congrats: 'Congrats 🎉',
+    timeSpent: 'Time elapsed',
+    share: 'Share',
+    continue: 'Continue',
+    shareCopied: 'Result copied to clipboard',
   }
 }

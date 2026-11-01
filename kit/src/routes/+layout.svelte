@@ -1,8 +1,9 @@
 <script lang="ts">
-  import {onMount} from 'svelte'
   import {Languages, User} from '@lucide/svelte'
+  import {Toaster} from 'svelte-sonner'
   import {NEXUS_G} from '$app/env/public'
-  import "#tw.css"
+  import * as i18n from '#lib/i18n/index.svelte.ts'
+  import '#tw.css'
 
   const {children} = $props()
 
@@ -29,18 +30,21 @@
       }
     }
   }
-
-  onMount(() => {
-
-  })
 </script>
+
+<svelte:head>
+  <title>{i18n.t('layout.title')}</title>
+  <meta name="description" content={i18n.t('layout.description')} />
+</svelte:head>
+
+<Toaster position="top-center" />
 
 <nav class="w-full bg-white/50 border-b border-ink-faint/30">
   <div class="h-15 max-w-main mx-auto flex items-center justify-between px-4 md:px-8">
     <img src="/logo.svg" alt="sudoku" class="h-2/3 bg-gray-50 rounded-sm border border-ink-faint/30" />
     <div class="flex items-center gap-1">
-      <button><Languages size={20}/></button>
-      <button onclick={click} data-id="login"><User size={20}/></button>
+      <button onclick={i18n.toggle} aria-label="language"><Languages size={20}/></button>
+      <button onclick={click} data-id="login" aria-label="login"><User size={20}/></button>
     </div>
   </div>
 </nav>

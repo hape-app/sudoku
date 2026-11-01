@@ -55,21 +55,35 @@ export function debounce<T extends (...args: any[]) => any>(func: T, wait: numbe
 }
 
 export function setCookie(k: string, v: string) {
-  cookieStore.set({
-    name: k,
-    value: v,
-    expires: Date.now() + 365 * 24 * 3600 * 1e3,
-    path: '/',
-    sameSite: 'lax',
-    //@ts-ignore
-    secure: true,
-  })
+  if (typeof document === 'undefined') return
+  if (typeof cookieStore !== 'undefined') {
+    cookieStore.set({
+      name: k,
+      value: v,
+      expires: Date.now() + 365 * 24 * 3600 * 1e3,
+      path: '/',
+      sameSite: 'lax',
+      //@ts-ignore
+      secure: true,
+    })
+    return
+  }
+  document.cookie = `${encodeURIComponent(k)}=${encodeURIComponent(v)}; max-age=${365 * 24 * 3600}; path=/; samesite=lax`
 }
 
 export async function getCookie<T>(key: string): Promise<T | undefined> {
-  let r
-  r = await cookieStore.get(key)
-  return r?.value as T
+  if (typeof document === 'undefined') return undefined
+  if (typeof cookieStore !== 'undefined') {
+    const r = await cookieStore.get(key)
+    return r?.value as T
+  }
+  const prefix = `${encodeURIComponent(key)}=`
+  for (const part of document.cookie.split('; ')) {
+    if (part.startsWith(prefix)) {
+      return decodeURIComponent(part.slice(prefix.length)) as T
+    }
+  }
+  return undefined
 }
 
 /** 计算字符串长度 更适合emoji场景 */

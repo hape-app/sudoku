@@ -19,6 +19,7 @@ class Collection<T extends Document> {
   async insertOne(doc: OptionalId<T>, opts?: InsertOneOptions) {
     let r
     r = await fetch('https://mgo.hape.app', {
+      method: 'POST',
       headers: {authorization: 'jarvis'},
       //@ts-ignore
       body: BSON.serialize({

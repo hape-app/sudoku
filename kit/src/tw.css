@@ -117,6 +117,6 @@
   &::-webkit-scrollbar {
     @apply hidden;
   }
-  scrollbar-wdith: none;
+  scrollbar-width: none;
   -ms-overflow-style: none;
 }

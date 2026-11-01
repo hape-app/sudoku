@@ -2,18 +2,20 @@
   import {onMount} from 'svelte'
   import {SvelteSet} from 'svelte/reactivity'
   import {Eraser, NotebookPen, Lightbulb, RotateCcw, ClockPlus} from '@lucide/svelte'
-  import {sleep} from '#lib'
+  import {toast} from '#lib'
   import * as i18n from '#lib/i18n/index.svelte.ts'
 
-  import {decode, duplicate} from './sudoku'
+  import {decode, duplicate, generate} from './sudoku'
 
 
   // svelte-ignore non_reactive_update
   let dialog: HTMLDialogElement
 
-  const {puzzle} = decode('9b7b1a2d9d6_5_4e3e7_2b8b2a5b4b6_4e5e3_7_9d6d2a3b1b5')
-  let answers = $state<Array<number | undefined>>(puzzle)
-  const levels = ['初级', '中级', '高级', '困难']
+  const DEFAULT_TASK = '9b7b1a2d9d6_5_4e3e7_2b8b2a5b4b6_4e5e3_7_9d6d2a3b1b5'
+  const initialPuzzle = decode(DEFAULT_TASK).puzzle
+  let puzzle = $state.raw<Array<number | undefined>>(initialPuzzle)
+  let answers = $state<Array<number | undefined>>([...initialPuzzle])
+  const levels = ['level0', 'level1', 'level2', 'level3'] as const
 
   const snap = $state({
     level: 3,
@@ -40,14 +42,11 @@
 
   // 是否完成
   const finished = $derived.by(() => {
-    let ok
-    for (const x of answers) {
-      if (!x) return false
+    if (answers.length < 81) return false
+    for (let i = 0; i < 81; i++) {
+      if (!answers[i]) return false
     }
-    if (!ok) return false
-    ok = errIndices.size === 0
-    if (!ok) return false
-    return true
+    return errIndices.size === 0
   })
   // 自动判断无法输入的数字
   const allowNums = $derived.by(() => {
@@ -94,13 +93,30 @@
   })
 
   function input(v: number) {
-    if (snap.mode === 'pen') answers[ci] = v
-    else if (notes[ci]) {
-      const n = notes[ci]
+    if (ci < 0 || puzzle[ci] || v < 1 || v > 9) return
+    if (snap.mode === 'pen') {
+      answers[ci] = v
+      if (notes[ci]) notes[ci].active = false
+      const bx = (current.x / 3 | 0) * 3
+      const by = (current.y / 3 | 0) * 3
+      for (let i = 0; i < 9; i++) {
+        notes[current.y * 9 + i]?.nums.delete(v)
+        notes[i * 9 + current.x]?.nums.delete(v)
+        notes[(by + (i / 3 | 0)) * 9 + bx + (i % 3)]?.nums.delete(v)
+      }
+    } else {
+      answers[ci] = undefined
+      let n = notes[ci]
+      if (!n) {
+        n = {active: true, nums: new SvelteSet<number>()}
+        notes[ci] = n
+      } else {
+        n.active = true
+      }
       if (n.nums.has(v)) n.nums.delete(v)
       else n.nums.add(v)
     }
-}
+  }
 
   function click(e: MouseEvent) {
     const ct = e.currentTarget as HTMLElement
@@ -123,36 +139,49 @@
   }
 
   function clear() {
-    if (ci < 0) return
+    if (ci < 0 || puzzle[ci]) return
     if (snap.mode === 'pen') answers[ci] = undefined
     else notes[ci]?.nums.clear()
   }
 
+  function replay() {
+    answers = [...puzzle]
+    notes = []
+    current = {x: -1, y: -1}
+    snap.t = 0
+    dialog?.close()
+  }
+
+  function newGame(level = snap.level) {
+    snap.level = level
+    puzzle = generate(level)
+    answers = [...puzzle]
+    notes = []
+    current = {x: -1, y: -1}
+    snap.t = 0
+    dialog?.close()
+  }
+
+  async function share() {
+    const levelName = i18n.t(`home.${levels[snap.level]}`)
+    const text = `${i18n.t('layout.title')} (${levelName}) - ${tt} ${location.href}`
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(text)
+      toast(i18n.t('home.shareCopied'), 'success')
+    }
+  }
+
   $effect(() => {
-    const v = notes[ci]
-    if (snap.mode === 'pen' && v) {
-      v.active = false
-    } else {
-      if (v) v.active = true
-      else notes[ci] = {active: true, nums: new SvelteSet<number>()}
+    if (finished && dialog && !dialog.open) {
+      dialog.showModal()
     }
   })
 
-  async function countdown() {
-    snap.t++
-    await sleep(1)
-    countdown()
-  }
-
-  function replay() {
-    answers = puzzle
-    notes = []
-  }
-
-  $inspect(finished)
-
   onMount(() => {
-    countdown()
+    const tid = setInterval(() => {
+      if (!finished) snap.t++
+    }, 1e3)
+    return () => clearInterval(tid)
   })
 </script>
 
@@ -162,11 +191,11 @@
     <div class="flex gap-4 relative flex-col lg:w-120">
       <div class="flex items-center justify-between">
         <div class="level" style:--ox={snap.level}>
-          {#each levels as x, i}
+          {#each levels as x, i (x)}
             <button
-              onclick={() => snap.level = i}
+              onclick={() => newGame(i)}
               class:active={snap.level === i}
-            >{x}</button>
+            >{i18n.t(`home.${x}`)}</button>
           {/each}
         </div>
         <span class="text-sm font-semibold fvn text-ink-fg font-mono">{tt}</span>
@@ -174,18 +203,18 @@
 
       <div style:--bc="#c1a57d70" style:--tc="#aaa0"
         class="grid grid-cols-3 w-full aspect-square gap-[3px] md:gap-[3px] bg-(--bc) border-3 md:border-4 border-(--bc) overflow-hidden rounded-md">
-        {#each {length: 9} as _, m}
+        {#each {length: 9} as _, m (m)}
           {const x1 = m % 3}
           {const y1 = (m / 3) | 0}
           <div class="aspect-square bg-(--tc) grid grid-cols-3 gap-[1px]">
-            {#each {length: 9} as _, n}
+            {#each {length: 9} as _, n (n)}
               {const x2 = n % 3}
               {const y2 = (n / 3) | 0}
               {const x = x1 * 3 + x2}
               {const y = y1 * 3 + y2}
               {const index = y * 9 + x}
               {const v = $derived(answers[index])}
-              {const raw = !!puzzle[index]}
+              {const raw = $derived(!!puzzle[index])}
               {const note = $derived(notes[index])}
               <div class="aspect-square bg-white relative cell flex items-center justify-center font-semibold"
                 onclick={click}
@@ -202,7 +231,7 @@
                 data-y={y}>
                 {#if note && note.active && note.nums.size}
                   <div class="absolute top-0 left-0 w-full h-full grid grid-cols-3">
-                    {#each {length: 9} as _, i}
+                    {#each {length: 9} as _, i (i)}
                       {const v = i + 1}
                       <div class="flex items-center justify-center relative">
                         <span
@@ -221,15 +250,15 @@
       <div class="text-xs flex items-center justify-between bg-gray-50/50 p-3 rounded-md border border-ink-faint/30">
         <button onclick={() => hl.num = !hl.num} style:--bg="#e2dfff">
           <span class="square" class:bg-(--bg)={hl.num}></span>
-          <span>数字匹配</span>
+          <span>{i18n.t('home.matchNum')}</span>
         </button>
         <button onclick={() => hl.row = !hl.row} style:--bg="#eceef0">
           <span class="square" class:bg-(--bg)={hl.row}></span>
-          <span>行列高亮</span>
+          <span>{i18n.t('home.highlightRC')}</span>
         </button>
         <button onclick={() => hl.err = !hl.err} style:--bg="#ffdad6">
           <span class="square" class:bg-(--bg)={hl.err}></span>
-          <span>数字冲突</span>
+          <span>{i18n.t('home.conflict')}</span>
         </button>
       </div>
     </div>
@@ -237,7 +266,7 @@
     <!-- 右侧 -->
     <div class="flex flex-col">
       <div class="num-panel">
-        {#each {length: 9} as _, i}
+        {#each {length: 9} as _, i (i)}
           {const v = i + 1}
           <button
             data-num={v}
@@ -252,14 +281,14 @@
           class:active={snap.mode === 'note'}
           onclick={() => snap.mode = snap.mode === 'note' ? 'pen' : 'note'}
         ><NotebookPen size={20}/></button>
-        <button title="新游戏" onclick={replay}><ClockPlus size={20}/></button>
-        <button title="重来" onclick={replay}><RotateCcw size={20}/></button>
+        <button title={i18n.t('home.newGame')} onclick={() => newGame()}><ClockPlus size={20}/></button>
+        <button title={i18n.t('home.replay')} onclick={replay}><RotateCcw size={20}/></button>
       </div>
       <div class="tip text-xs font-semibold">
-        <p class="flex items-center gap-2 border-b border-ink-faint/30 pb-3 border-dashed"><Lightbulb size={20} class="text-yellow-500"/><span class="text-sm">操作提示</span></p>
-        <p class="mt-4"><span class="mr-2">清空数字</span><kbd>双击</kbd><span class="mx-1">or</span><kbd>Del/退格</kbd></p>
-        <p class="mt-4"><span class="mr-2">切换笔记</span><kbd>N</kbd></p>
-        <p class="mt-4"><span class="mr-2">填写数字</span><kbd>数字键</kbd></p>
+        <p class="flex items-center gap-2 border-b border-ink-faint/30 pb-3 border-dashed"><Lightbulb size={20} class="text-yellow-500"/><span class="text-sm">{i18n.t('home.tips')}</span></p>
+        <p class="mt-4"><span class="mr-2">{i18n.t('home.clearNum')}</span><kbd>{i18n.t('home.dblclick')}</kbd><span class="mx-1">or</span><kbd>{i18n.t('home.delBackspace')}</kbd></p>
+        <p class="mt-4"><span class="mr-2">{i18n.t('home.toggleNote')}</span><kbd>N</kbd></p>
+        <p class="mt-4"><span class="mr-2">{i18n.t('home.fillNum')}</span><kbd>{i18n.t('home.numKeys')}</kbd></p>
       </div>
     </div>
   </div>
@@ -267,29 +296,32 @@
 
 {#if finished}
 <dialog bind:this={dialog} class="rounded-md m-auto shadow-md p-4 w-full max-w-100 border border-ink-faint/30">
-  <h1 class="font-semibold text-center">完成数独</h1>
+  <h1 class="font-semibold text-center">{i18n.t('home.completed')}</h1>
   <p class="text-center text-sm mt-4 flex items-center gap-2 justify-center">
-    <span>恭喜🎉</span>
-    <span>此次游戏耗时</span>
+    <span>{i18n.t('home.congrats')}</span>
+    <span>{i18n.t('home.timeSpent')}</span>
     <span class="text-orange-500">{tt}</span>
   </p>
   <div class="mt-6 flex items-center gap-4 justify-center">
-    <button class="text-xs border border-ink-faint/30 rounded-md py-1 px-3 bg-lime-600 text-white">分享</button>
-    <button class="text-xs border border-ink-faint/30 rounded-md py-1 px-3 bg-sky-500 text-white">继续</button>
+    <button onclick={share} class="text-xs border border-ink-faint/30 rounded-md py-1 px-3 bg-lime-600 text-white">{i18n.t('home.share')}</button>
+    <button onclick={() => newGame()} class="text-xs border border-ink-faint/30 rounded-md py-1 px-3 bg-sky-500 text-white">{i18n.t('home.continue')}</button>
   </div>
 </dialog>
 {/if}
 
 <svelte:window
   onkeydown={e => {
-    if (ci < 0) return
+    if (finished) return
     switch (e.key) {
-      case 'n': {
+      case 'n':
+      case 'N': {
         snap.mode = snap.mode === 'note' ? 'pen' : 'note'
         break
       }
 
-      case 'Backspace': {
+      case 'Backspace':
+      case 'Delete':
+      case '0': {
         clear()
         break
       }
@@ -298,6 +330,11 @@
       case 'ArrowDown':
       case 'ArrowLeft':
       case 'ArrowRight': {
+        e.preventDefault()
+        if (current.x === -1) {
+          current = {x: 0, y: 0}
+          break
+        }
         let y = current.y + (e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0)
         let x = current.x + (e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0)
         if (x < 0) x = 0
@@ -309,7 +346,8 @@
       }
 
       default: {
-        if (!(e.key >= '0' && e.key <= '9')) return
+        if (ci < 0) return
+        if (!(e.key >= '1' && e.key <= '9')) return
         input(+e.key)
       }
     }

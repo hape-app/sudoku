@@ -8,7 +8,7 @@ type Path<T> = T extends object ? {
 }[keyof T & string] : never
 
 export const data = $state({
-  lang: 'en' as Lang
+  lang: 'zh' as Lang
 })
 
 $effect.root(() => {
@@ -23,6 +23,10 @@ $effect.root(() => {
     setCookie('lang', data.lang)
   })
 })
+
+export function toggle() {
+  data.lang = data.lang === 'zh' ? 'en' : 'zh'
+}
 
 export function t(key: Path<M>, params?: Record<string, string | number>): string {
   const message = get(key)

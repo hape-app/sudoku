@@ -1,14 +1,14 @@
 {
-  "name": "Memo",
-  "short_name": "Memo",
+  "name": "Sudoku",
+  "short_name": "Sudoku",
   "version": "1.0",
   "start_url": ".",
-  "id": "memo",
+  "id": "sudoku",
   "scope": "/",
   "display": "fullscreen",
   "background_color": "#333",
   "orientation": "portrait",
-  "description": "欲买桂花同载酒，终不似，少年游",
+  "description": "在线数独游戏",
   "theme_color": "#1b2824",
   "icons": [
 	  {

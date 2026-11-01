@@ -2,11 +2,6 @@ import {BSON} from 'bson'
 import type {Document, OptionalId, InsertOneOptions, Filter, UpdateFilter} from 'mongodb'
 import type * as schema from './schema'
 
-{
-  // const m = new MongoClient('')
-  // m.db('').collection('').updateOne()
-}
-
 class Collection<T extends Document> {
   db: string
   name: string

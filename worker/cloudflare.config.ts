@@ -3,8 +3,9 @@ import * as entrypoint from './src' with {type: 'cf-worker'}
 
 export default defineConfig({
 	worker: {
-		name: 'api-lufei-me',
-		compatibilityDate: '2026-10-01',
+		name: 'api-sudoku-hape',
+		domains: ['api.sudoku.hape.app'],
+		compatibilityDate: '2026-11-01',
 		entrypoint,
 		compatibilityFlags: ['nodejs_compat'],
 		env: {
